@@ -1,0 +1,83 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Pump Daily Ledger</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+:root{--bg:#f6f7f9;--c:#fff;--t:#1a1d21;--m:#6b7280;--b:#e3e6ea;--p:#0b6e4f;--r:#c0392b;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#121416;--c:#1c1f23;--t:#eceff2;--m:#9aa3ad;--b:#2c3136;--p:#3fb98a;--r:#ef6b5c}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--t);font:15px system-ui,sans-serif;padding:12px;max-width:560px;margin:auto}
+h1{font-size:19px;margin:4px 0 10px}h2{font-size:14px;margin:0 0 8px;color:var(--m);text-transform:uppercase;letter-spacing:.04em}
+.tabs{display:flex;gap:6px;margin-bottom:10px}.tabs button{flex:1;padding:9px;border:1px solid var(--b);background:var(--c);color:var(--t);border-radius:8px;font-size:14px}.tabs .on{background:var(--p);color:#fff;border-color:var(--p)}
+.card{background:var(--c);border:1px solid var(--b);border-radius:12px;padding:12px;margin-bottom:10px}
+.row{display:grid;gap:6px;align-items:center;margin-bottom:6px}.g3{grid-template-columns:1.2fr 1fr 1fr 1fr}.g2{grid-template-columns:1fr 1fr}
+input{width:100%;padding:8px;border:1px solid var(--b);border-radius:8px;background:var(--bg);color:var(--t);font-size:15px}
+label{font-size:12px;color:var(--m)}.hd{font-size:11px;color:var(--m)}
+.k{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px dashed var(--b)}.k:last-child{border:0}
+.big{font-size:22px;font-weight:700}.bad{color:var(--r)}.good{color:var(--p)}
+.btn{padding:11px;border:0;border-radius:8px;background:var(--p);color:#fff;font-size:15px;width:100%;margin-top:4px}.sec{background:var(--bg);color:var(--t);border:1px solid var(--b)}
+.hide{display:none}.note{font-size:12px;color:var(--m);margin:4px 0}
+</style></head><body>
+<h1>⛽ Pump Daily Ledger</h1>
+<div class="tabs" id="lg"><button data-l="en">English</button><button data-l="hi">हिंदी</button><button data-l="hn">Hinglish</button></div><div class="tabs"><button id="t0" class="on">Today</button><button id="t1">History</button><button id="t2">Setup</button></div>
+<div id="v0"></div><div id="v1" class="hide"></div><div id="v2" class="hide"></div>
+<script>
+const $=id=>document.getElementById(id),n=v=>parseFloat(v)||0,f=(v,d=2)=>n(v).toLocaleString('en-IN',{minimumFractionDigits:d,maximumFractionDigits:d});
+let S={fuels:{Petrol:100,Diesel:90},nozzles:[{id:1,name:'N1',fuel:'Petrol'},{id:2,name:'N2',fuel:'Diesel'}],days:{}};
+try{const s=localStorage.getItem('pumpS');if(s)S=JSON.parse(s)}catch(e){}
+const save=()=>{try{localStorage.setItem('pumpS',JSON.stringify(S))}catch(e){}};
+const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+let cur=today();
+const prev=d=>Object.keys(S.days).filter(k=>k<d).sort().pop();
+let LG='en';try{LG=localStorage.getItem('pumpL')||'en'}catch(e){}
+const DI=[['Pump Daily Ledger','पंप का दैनिक खाता','Pump Daily Hisaab'],['Today','आज','Aaj'],['History','पुराना रिकॉर्ड','Purana Record'],['Setup','सेटिंग','Setting'],['Date','तारीख','Tareekh'],['Nozzle meter readings (litres)','नोज़ल मीटर रीडिंग (लीटर)','Nozzle meter reading (litre)'],['Nozzles','नोज़ल','Nozzle'],['Nozzle','नोज़ल','Nozzle'],['Open','शुरू','Shuru'],['Close dip','बंद डिप','Band dip'],['Close','बंद','Band'],['Test L','टेस्ट ली.','Test L'],['Fuel rates (₹/L)','ईंधन भाव (₹/ली)','Fuel bhav (₹/L)'],['Fuel','ईंधन','Fuel'],['Received','आया माल','Aaya maal'],['Tank stock (dip, litres)','टंकी स्टॉक (डिप, लीटर)','Tank stock (dip, litre)'],['Collections (₹)','वसूली (₹)','Vasooli (₹)'],['Cash/amount difference','नकद/रकम का अंतर','Cash/rakam ka antar'],['Cash','नकद','Cash'],['UPI / Card','UPI / कार्ड','UPI / Card'],['Credit (customers)','उधार (ग्राहक)','Udhaar (customer)'],['Expenses paid','खर्च','Kharcha'],['End-of-day summary','दिन का सारांश','Din ka summary'],['sold','बिक्री','bikri'],['Total sales','कुल बिक्री','Kul bikri'],['Collected + expenses + credit','वसूली + खर्च + उधार','Vasooli + kharcha + udhaar'],['✓ tallied','✓ हिसाब मिला','✓ hisaab mil gaya'],['(short)','(कम)','(kam)'],['(excess)','(ज़्यादा)','(zyada)'],['Stock reconciliation','स्टॉक मिलान','Stock milan'],['expected','होना चाहिए','hona chahiye'],['Variance = actual dip − (opening + received − sales). Small ± differences from dip reading/temperature are normal; large or repeated losses mean leakage, meter issues or theft.','फ़र्क = असली डिप − (शुरू + आया माल − बिक्री)। थोड़ा फ़र्क (डिप/तापमान से) सामान्य है; बड़ा या बार-बार नुकसान मतलब लीकेज, मीटर की गड़बड़ी या चोरी।','Farq = asli dip − (shuru + aaya maal − bikri). Thoda farq normal hai; bada ya baar-baar nuksan matlab leakage, meter problem ya chori.'],['Test L = litres drawn for quality/quantity test and poured back into tank (usually 5 L). It is not counted as a sale.','टेस्ट ली. = गुणवत्ता/माप जाँच के लिए निकाला गया तेल जो वापस टंकी में डाला जाता है (आमतौर पर 5 ली.)। यह बिक्री नहीं गिना जाता।','Test L = quality/maap check ke liye nikala tel jo wapas tank me daala jaata hai (aam taur par 5 L). Ye bikri me nahi ginte.'],['Past days','पिछले दिन','Pichhle din'],['No saved days yet.','अभी कोई दिन सेव नहीं है।','Abhi koi din save nahi hai.'],['Export CSV','CSV डाउनलोड करें','CSV download karein'],['Tap a day to open/edit it.','किसी दिन पर टैप करके खोलें/बदलें।','Kisi din par tap karke kholein/badlein.'],['Save day','दिन सेव करें','Din save karein'],['Saved ✓','सेव हो गया ✓','Save ho gaya ✓'],['+ Add nozzle','+ नोज़ल जोड़ें','+ Nozzle jodein'],['Save setup','सेटिंग सेव करें','Setting save karein'],['Rates apply to days saved afterwards; older days keep the rate they were saved with. Data is stored on this device/browser only — export CSV regularly.','नया भाव आगे के दिनों पर लगेगा; पुराने दिन अपने भाव पर रहेंगे। डेटा सिर्फ़ इसी फ़ोन/ब्राउज़र में है — CSV बैकअप नियमित लें।','Naya bhav aage ke dino par lagega; purane din apne bhav par rahenge. Data sirf isi phone/browser me hai — CSV backup niyamit lein.'],['Petrol','पेट्रोल','Petrol'],['Diesel','डीज़ल','Diesel']];
+const esc=s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+const RX=new RegExp(DI.map(d=>d[0]).sort((a,b)=>b.length-a.length).map(esc).join('|'),'g');
+const tx=s=>{const i=LG=='hi'?1:LG=='hn'?2:0;if(!i)return s;return s.replace(RX,m=>(DI.find(d=>d[0]==m)||[])[i]||m)};
+function tr(root){const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let x;while(x=w.nextNode()){if(x.parentNode.tagName=='SCRIPT')continue;if(x.__o===undefined)x.__o=x.nodeValue;x.nodeValue=tx(x.__o)}}
+function lgBtn(){document.querySelectorAll('#lg button').forEach(b=>b.className=b.dataset.l==LG?'on':'')}
+document.querySelectorAll('#lg button').forEach(b=>b.onclick=()=>{LG=b.dataset.l;try{localStorage.setItem('pumpL',LG)}catch(e){}lgBtn();tr(document.body)});
+function tab(i){[0,1,2].forEach(j=>{$('t'+j).className=j==i?'on':'';$('v'+j).className=j==i?'':'hide'});[draw,hist,setup][i]();tr($('v'+i))}
+[0,1,2].forEach(i=>$('t'+i).onclick=()=>tab(i));
+function draw(){
+ const D=S.days[cur]||{},p=S.days[prev(cur)]||{};
+ let h=`<div class="card"><label>Date</label><input type="date" id="dt" value="${cur}"></div><div class="card"><h2>Nozzle meter readings (litres)</h2><div class="row g3 hd"><span>Nozzle</span><span>Open</span><span>Close</span><span>Test L</span></div>`;
+ S.nozzles.forEach(z=>{const d=(D.noz||{})[z.id]||{},o=d.o!=null?d.o:((p.noz||{})[z.id]||{}).c;
+  h+=`<div class="row g3"><span>${z.name}<br><small class="hd">${z.fuel}</small></span><input data-k="n${z.id}o" inputmode="decimal" value="${o??''}"><input data-k="n${z.id}c" inputmode="decimal" value="${d.c??''}"><input data-k="n${z.id}t" inputmode="decimal" value="${d.t??5}"></div>`});
+ h+=`<div class="note">Test L = litres drawn for quality/quantity test and poured back into tank (usually 5 L). It is not counted as a sale.</div></div><div class="card"><h2>Tank stock (dip, litres)</h2><div class="row g3 hd"><span>Fuel</span><span>Open</span><span>Received</span><span>Close dip</span></div>`;
+ Object.keys(S.fuels).forEach(x=>{const d=(D.tank||{})[x]||{},o=d.o!=null?d.o:((p.tank||{})[x]||{}).c;
+  h+=`<div class="row g3"><span>${x}</span><input data-k="t${x}o" inputmode="decimal" value="${o??''}"><input data-k="t${x}r" inputmode="decimal" value="${d.r??''}"><input data-k="t${x}c" inputmode="decimal" value="${d.c??''}"></div>`});
+ const P=D.pay||{};
+ h+=`</div><div class="card"><h2>Collections (₹)</h2><div class="row g2"><div><label>Cash</label><input data-k="pc" inputmode="decimal" value="${P.cash??''}"></div><div><label>UPI / Card</label><input data-k="pd" inputmode="decimal" value="${P.dig??''}"></div><div><label>Credit (customers)</label><input data-k="pr" inputmode="decimal" value="${P.cr??''}"></div><div><label>Expenses paid</label><input data-k="pe" inputmode="decimal" value="${P.exp??''}"></div></div></div><div class="card" id="sum"></div><button class="btn" id="sv">Save day</button>`;
+ $('v0').innerHTML=h;
+ $('dt').onchange=e=>{cur=e.target.value||today();draw()};
+ $('v0').querySelectorAll('[data-k]').forEach(i=>i.oninput=calc);
+ $('sv').onclick=()=>{S.days[cur]=read();save();$('sv').textContent=tx('Saved ✓');setTimeout(()=>$('sv').textContent=tx('Save day'),1200)};
+ calc();tr($('v0'))}
+function read(){const g=k=>{const e=document.querySelector(`[data-k="${k}"]`);return e.value===''?null:n(e.value)};
+ const r={noz:{},tank:{},pay:{cash:g('pc'),dig:g('pd'),cr:g('pr'),exp:g('pe')},rates:{...S.fuels}};
+ S.nozzles.forEach(z=>r.noz[z.id]={o:g('n'+z.id+'o'),c:g('n'+z.id+'c'),t:g('n'+z.id+'t'),fuel:z.fuel,name:z.name});
+ Object.keys(S.fuels).forEach(x=>r.tank[x]={o:g('t'+x+'o'),r:g('t'+x+'r'),c:g('t'+x+'c')});return r}
+function totals(r){const L={},A={};let tot=0;
+ Object.values(r.noz).forEach(z=>{if(z.c==null||z.o==null)return;const l=n(z.c)-n(z.o)-n(z.t);L[z.fuel]=(L[z.fuel]||0)+l;const a=l*n((r.rates||S.fuels)[z.fuel]);A[z.fuel]=(A[z.fuel]||0)+a;tot+=a});
+ const p=r.pay,col=n(p.cash)+n(p.dig)+n(p.cr)+n(p.exp);return{L,A,tot,col,diff:col-tot}}
+function calc(){const r=read(),T=totals(r);let h='<h2>End-of-day summary</h2>';
+ Object.keys(T.L).forEach(x=>h+=`<div class="k"><span>${x} sold</span><b>${f(T.L[x])} L · ₹${f(T.A[x])}</b></div>`);
+ h+=`<div class="k"><span>Total sales</span><span class="big">₹${f(T.tot)}</span></div><div class="k"><span>Collected + expenses + credit</span><b>₹${f(T.col)}</b></div><div class="k"><span>Cash/amount difference</span><b class="${Math.abs(T.diff)<1?'good':'bad'}">${T.diff>=0?'+':''}₹${f(T.diff)} ${Math.abs(T.diff)<1?'✓ tallied':T.diff<0?'(short)':'(excess)'}</b></div><h2 style="margin-top:10px">Stock reconciliation</h2>`;
+ Object.keys(S.fuels).forEach(x=>{const k=r.tank[x];if(k.o==null||k.c==null||T.L[x]==null)return;const ex=n(k.o)+n(k.r)-T.L[x],v=n(k.c)-ex;
+  h+=`<div class="k"><span>${x}: expected ${f(ex)} L</span><b class="${Math.abs(v)<=Math.max(5,ex*.0035)?'good':'bad'}">${v>=0?'+':''}${f(v)} L</b></div>`});
+ h+='<div class="note">Variance = actual dip − (opening + received − sales). Small ± differences from dip reading/temperature are normal; large or repeated losses mean leakage, meter issues or theft.</div>';$('sum').innerHTML=h;tr($('sum'))}
+function hist(){const ks=Object.keys(S.days).sort().reverse();let h='';
+ if(!ks.length)h='<div class="card">No saved days yet.</div>';
+ else{h='<div class="card"><h2>Past days</h2>';ks.forEach(k=>{const T=totals(S.days[k]);h+=`<div class="k" data-d="${k}" style="cursor:pointer"><span>${k}</span><span>₹${f(T.tot,0)} <small class="${Math.abs(T.diff)<1?'good':'bad'}">${Math.abs(T.diff)<1?'✓':(T.diff>0?'+':'')+f(T.diff,0)}</small></span></div>`});
+ h+='</div><button class="btn sec" id="ex">Export CSV</button><div class="note">Tap a day to open/edit it.</div>'}
+ $('v1').innerHTML=h;$('v1').querySelectorAll('[data-d]').forEach(e=>e.onclick=()=>{cur=e.dataset.d;tab(0)});
+ if($('ex'))$('ex').onclick=()=>{let c='Date,Fuel,Litres,Amount,Digital,Credit,Cash,Expenses,Diff\n';ks.slice().reverse().forEach(k=>{const r=S.days[k],T=totals(r);Object.keys(T.L).forEach(x=>c+=`${k},${x},${T.L[x].toFixed(2)},${T.A[x].toFixed(2)},${n(r.pay.dig)},${n(r.pay.cr)},${n(r.pay.cash)},${n(r.pay.exp)},${T.diff.toFixed(2)}\n`)});
+  try{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([c],{type:'text/csv'}));a.download='pump-ledger.csv';a.click()}catch(e){}}}
+function setup(){let h='<div class="card"><h2>Fuel rates (₹/L)</h2>';
+ Object.keys(S.fuels).forEach(x=>h+=`<div class="row g2"><span>${x}</span><input data-f="${x}" inputmode="decimal" value="${S.fuels[x]}"></div>`);
+ h+='</div><div class="card"><h2>Nozzles</h2>';
+ S.nozzles.forEach((z,i)=>h+=`<div class="row g3" style="grid-template-columns:1fr 1fr"><input data-nn="${i}" value="${z.name}"><select data-nf="${i}" style="padding:8px;border-radius:8px;background:var(--bg);color:var(--t);border:1px solid var(--b)">${Object.keys(S.fuels).map(x=>`<option value="${x}"${x==z.fuel?' selected':''}>${x}</option>`).join('')}</select></div>`);
+ h+='<button class="btn sec" id="an">+ Add nozzle</button></div><button class="btn" id="ss">Save setup</button><div class="note">Rates apply to days saved afterwards; older days keep the rate they were saved with. Data is stored on this device/browser only — export CSV regularly.</div>';
+ $('v2').innerHTML=h;
+ $('an').onclick=()=>{S.nozzles.push({id:Date.now(),name:'N'+(S.nozzles.length+1),fuel:Object.keys(S.fuels)[0]});save();setup();tr($('v2'))};
+ $('ss').onclick=()=>{document.querySelectorAll('[data-f]').forEach(e=>S.fuels[e.dataset.f]=n(e.value));document.querySelectorAll('[data-nn]').forEach(e=>S.nozzles[e.dataset.nn].name=e.value);document.querySelectorAll('[data-nf]').forEach(e=>S.nozzles[e.dataset.nf].fuel=e.value);save();$('ss').textContent=tx('Saved ✓')}}
+draw();lgBtn();tr(document.body);
+</script></body></html>
